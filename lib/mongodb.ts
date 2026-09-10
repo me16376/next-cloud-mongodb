@@ -1,48 +1,90 @@
 import { MongoClient, Db } from "mongodb";
 
-const fallbackUri =
-  "mongodb://mosabber16376_db_user:46JKde1tjtpaxhOy@ac-odtentf-shard-00-00.8onjvem.mongodb.net:27017,ac-odtentf-shard-00-01.8onjvem.mongodb.net:27017,ac-odtentf-shard-00-02.8onjvem.mongodb.net:27017/next_cloud_db?ssl=true&replicaSet=atlas-6zocl1-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Mosabber";
+// Shard hosts in priority order (shard-00-02 is currently the primary)
+const SHARD_HOSTS = [
+  "ac-odtentf-shard-00-02.8onjvem.mongodb.net:27017",
+  "ac-odtentf-shard-00-00.8onjvem.mongodb.net:27017",
+  "ac-odtentf-shard-00-01.8onjvem.mongodb.net:27017",
+];
 
-let client: MongoClient | null = null;
+const DEFAULT_AUTH = "mosabber16376_db_user:46JKde1tjtpaxhOy";
+const DEFAULT_DB = "next_cloud_db";
 
 declare global {
   // eslint-disable-next-line no-var
-  var _mongoClientPromise: Promise<MongoClient> | undefined;
+  var _mongoClientInstance: MongoClient | null | undefined;
 }
 
-export function getClientPromise(): Promise<MongoClient> {
-  let uri = process.env.MONGODB_URI || fallbackUri;
-  
-  // Cloudflare Workers / Pages cannot resolve DNS SRV records (mongodb+srv://)
-  if (uri.startsWith("mongodb+srv://")) {
-    console.warn("⚠️ mongodb+srv:// detected. Cloudflare edge cannot resolve SRV DNS. Falling back to direct shard replica set URI.");
-    uri = fallbackUri;
-  }
-  
-  const isDirect = uri.includes("directConnection=true");
+/**
+ * Creates and connects a MongoClient using direct connection to a specific shard.
+ * Direct connection bypasses serverless replica set discovery multi-socket timeouts on Cloudflare.
+ */
+async function connectToShard(host: string, auth: string, dbName: string): Promise<MongoClient> {
+  const uri = `mongodb://${auth}@${host}/${dbName}?authSource=admin&retryWrites=true&w=majority&appName=Mosabber`;
 
-  if (!global._mongoClientPromise) {
-    client = new MongoClient(uri, {
-      connectTimeoutMS: 10000,
-      socketTimeoutMS: 15000,
-      serverSelectionTimeoutMS: 10000,
-      maxPoolSize: 1,
-      ...(isDirect ? { directConnection: true } : {}),
-    });
-    global._mongoClientPromise = client.connect().catch((err) => {
-      // Clear cached promise on failure so next invocation can retry
-      global._mongoClientPromise = undefined;
-      client = null;
-      throw err;
-    });
+  const client = new MongoClient(uri, {
+    directConnection: true,
+    tls: true,
+    tlsAllowInvalidCertificates: true,
+    family: 4,
+    maxPoolSize: 1,
+    minPoolSize: 0,
+    connectTimeoutMS: 5000,
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 8000,
+  });
+
+  await client.connect();
+  return client;
+}
+
+export async function getClientPromise(): Promise<MongoClient> {
+  // If we already have an active client, verify it's still alive
+  if (global._mongoClientInstance) {
+    try {
+      await global._mongoClientInstance.db("admin").command({ ping: 1 });
+      return global._mongoClientInstance;
+    } catch {
+      // Stale or closed socket from previous serverless invocation
+      try {
+        await global._mongoClientInstance.close();
+      } catch {
+        // ignore
+      }
+      global._mongoClientInstance = null;
+    }
   }
-  return global._mongoClientPromise;
+
+  const envUri = process.env.MONGODB_URI || "";
+  let auth = DEFAULT_AUTH;
+  const dbName = process.env.MONGODB_DB || DEFAULT_DB;
+
+  // Extract auth from envUri if provided
+  const match = envUri.match(/mongodb(?:\+srv)?:\/\/([^@]+)@/);
+  if (match && match[1]) {
+    auth = match[1];
+  }
+
+  // Try hosts in priority order with failover
+  let lastError: any = null;
+  for (const host of SHARD_HOSTS) {
+    try {
+      const client = await connectToShard(host, auth, dbName);
+      global._mongoClientInstance = client;
+      return client;
+    } catch (err: any) {
+      lastError = err;
+      console.warn(`Failed connecting to ${host}:`, err.message || err);
+    }
+  }
+
+  throw lastError || new Error("Failed to connect to any MongoDB Atlas shard host");
 }
 
 export async function getDatabase(): Promise<Db> {
-  const dbName = process.env.MONGODB_DB || "next_cloud_db";
-  const connectedClient = await getClientPromise();
-  return connectedClient.db(dbName);
+  const dbName = process.env.MONGODB_DB || DEFAULT_DB;
+  const client = await getClientPromise();
+  return client.db(dbName);
 }
 
 export default getClientPromise;
