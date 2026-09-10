@@ -270,12 +270,12 @@ export default function Home() {
                   <span className="text-amber-300 font-mono font-medium">nodejs_compat</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-white/5">
-                  <span className="text-slate-400">Build Preset:</span>
-                  <span className="text-slate-200 font-mono">@cloudflare/next-on-pages</span>
+                  <span className="text-slate-400">Build Command:</span>
+                  <span className="text-slate-200 font-mono">npx next build</span>
                 </div>
                 <div className="flex justify-between py-1">
                   <span className="text-slate-400">Output Dir:</span>
-                  <span className="text-slate-200 font-mono">.vercel/output/static</span>
+                  <span className="text-slate-200 font-mono">out</span>
                 </div>
               </div>
             </div>
@@ -499,25 +499,25 @@ export default function Home() {
             <div className="bg-slate-900/70 p-3.5 rounded-xl border border-white/5 space-y-1.5">
               <span className="font-semibold text-amber-300 block">1. Build Command</span>
               <code className="text-slate-200 bg-slate-950 px-2 py-1 rounded block font-mono">
-                npx @cloudflare/next-on-pages
+                npx next build
               </code>
-              <p className="text-[11px] text-slate-400">Runs Next.js build and compiles edge functions for Cloudflare Pages.</p>
+              <p className="text-[11px] text-slate-400">Exports Next.js static assets directly into the /out directory.</p>
             </div>
 
             <div className="bg-slate-900/70 p-3.5 rounded-xl border border-white/5 space-y-1.5">
               <span className="font-semibold text-emerald-300 block">2. Output Directory</span>
               <code className="text-slate-200 bg-slate-950 px-2 py-1 rounded block font-mono">
-                .vercel/output/static
+                out
               </code>
-              <p className="text-[11px] text-slate-400">Standard static + edge functions output folder produced by next-on-pages.</p>
+              <p className="text-[11px] text-slate-400">Cloudflare Pages serves all static assets from this folder.</p>
             </div>
 
             <div className="bg-slate-900/70 p-3.5 rounded-xl border border-white/5 space-y-1.5">
-              <span className="font-semibold text-cyan-300 block">3. Compatibility Flag</span>
+              <span className="font-semibold text-cyan-300 block">3. Cloudflare Functions</span>
               <code className="text-slate-200 bg-slate-950 px-2 py-1 rounded block font-mono">
-                nodejs_compat
+                /functions directory
               </code>
-              <p className="text-[11px] text-slate-400">Enables Node.js TCP sockets so MongoDB driver connects seamlessly.</p>
+              <p className="text-[11px] text-slate-400">Native Cloudflare Functions with nodejs_compat for MongoDB Atlas.</p>
             </div>
           </div>
         </div>
