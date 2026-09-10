@@ -9,6 +9,7 @@
     "lint": "next lint",
     "dev:vinext": "vinext dev",
     "build:vinext": "vinext build",
+    "pages:build": "vinext build",
     "preview:vinext": "wrangler dev",
     "deploy:vinext": "vinext-cloudflare deploy --config dist/server/wrangler.json"
   },
