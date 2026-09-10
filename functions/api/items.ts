@@ -5,12 +5,18 @@ interface Env {
   MONGODB_DB?: string;
 }
 
-// Direct standard MongoDB URI without DNS SRV (Cloudflare Workers does not support DNS SRV lookups)
-const fallbackUri =
+const directUri =
   "mongodb://mosabber16376_db_user:46JKde1tjtpaxhOy@ac-odtentf-shard-00-00.8onjvem.mongodb.net:27017,ac-odtentf-shard-00-01.8onjvem.mongodb.net:27017,ac-odtentf-shard-00-02.8onjvem.mongodb.net:27017/next_cloud_db?ssl=true&replicaSet=atlas-6zocl1-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Mosabber";
 
+function getCleanUri(envUri?: string): string {
+  if (!envUri || envUri.startsWith("mongodb+srv://")) {
+    return directUri;
+  }
+  return envUri;
+}
+
 function createClient(env: Env): { client: MongoClient; dbName: string } {
-  const uri = env.MONGODB_URI || fallbackUri;
+  const uri = getCleanUri(env.MONGODB_URI);
   const dbName = env.MONGODB_DB || "next_cloud_db";
   const client = new MongoClient(uri, {
     connectTimeoutMS: 10000,
