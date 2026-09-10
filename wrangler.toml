@@ -1,9 +1,4 @@
 name = "next-cloud-mongodb"
-main = ".open-next/worker.js"
+pages_build_output_dir = "out"
 compatibility_date = "2026-09-08"
 compatibility_flags = ["nodejs_compat"]
-pages_build_output_dir = ".open-next/assets"
-
-[assets]
-directory = ".open-next/assets"
-binding = "ASSETS"
