@@ -1,4 +1,4 @@
-import { MongoClient, Db } from "mongodb";
+import { MongoClient } from "mongodb";
 
 interface Env {
   MONGODB_URI?: string;
@@ -8,28 +8,21 @@ interface Env {
 const fallbackUri =
   "mongodb+srv://mosabber16376_db_user:46JKde1tjtpaxhOy@mosabber.8onjvem.mongodb.net/next_cloud_db?retryWrites=true&w=majority&appName=Mosabber";
 
-let client: MongoClient | null = null;
-
-async function getDatabase(env: Env): Promise<Db> {
-  const uri = env.MONGODB_URI || fallbackUri;
-  const dbName = env.MONGODB_DB || "next_cloud_db";
-
-  if (!client) {
-    client = new MongoClient(uri, {
-      connectTimeoutMS: 10000,
-      socketTimeoutMS: 45000,
-      serverSelectionTimeoutMS: 10000,
-      maxPoolSize: 10,
-    });
-    await client.connect();
-  }
-  return client.db(dbName);
-}
-
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const startTime = Date.now();
+  const uri = context.env.MONGODB_URI || fallbackUri;
+  const dbName = context.env.MONGODB_DB || "next_cloud_db";
+
+  const client = new MongoClient(uri, {
+    connectTimeoutMS: 10000,
+    socketTimeoutMS: 30000,
+    serverSelectionTimeoutMS: 8000,
+    maxPoolSize: 1,
+  });
+
   try {
-    const db = await getDatabase(context.env);
+    await client.connect();
+    const db = client.db(dbName);
     const pingResult = await db.command({ ping: 1 });
     const latency = Date.now() - startTime;
     const collections = await db.listCollections().toArray();
@@ -69,5 +62,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         },
       }
     );
+  } finally {
+    context.waitUntil(client.close().catch(() => {}));
   }
 };

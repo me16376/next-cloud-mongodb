@@ -1,4 +1,4 @@
-import { MongoClient, Db, ObjectId } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 
 interface Env {
   MONGODB_URI?: string;
@@ -8,27 +8,23 @@ interface Env {
 const fallbackUri =
   "mongodb+srv://mosabber16376_db_user:46JKde1tjtpaxhOy@mosabber.8onjvem.mongodb.net/next_cloud_db?retryWrites=true&w=majority&appName=Mosabber";
 
-let client: MongoClient | null = null;
-
-async function getDatabase(env: Env): Promise<Db> {
+function createClient(env: Env): { client: MongoClient; dbName: string } {
   const uri = env.MONGODB_URI || fallbackUri;
   const dbName = env.MONGODB_DB || "next_cloud_db";
-
-  if (!client) {
-    client = new MongoClient(uri, {
-      connectTimeoutMS: 10000,
-      socketTimeoutMS: 45000,
-      serverSelectionTimeoutMS: 10000,
-      maxPoolSize: 10,
-    });
-    await client.connect();
-  }
-  return client.db(dbName);
+  const client = new MongoClient(uri, {
+    connectTimeoutMS: 10000,
+    socketTimeoutMS: 30000,
+    serverSelectionTimeoutMS: 8000,
+    maxPoolSize: 1,
+  });
+  return { client, dbName };
 }
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
+  const { client, dbName } = createClient(context.env);
   try {
-    const db = await getDatabase(context.env);
+    await client.connect();
+    const db = client.db(dbName);
     const items = await db
       .collection("items")
       .find({})
@@ -63,10 +59,13 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         },
       }
     );
+  } finally {
+    context.waitUntil(client.close().catch(() => {}));
   }
 };
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
+  const { client, dbName } = createClient(context.env);
   try {
     const body: any = await context.request.json();
     const { title, description, category } = body;
@@ -84,7 +83,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    const db = await getDatabase(context.env);
+    await client.connect();
+    const db = client.db(dbName);
     const newItem = {
       title: title.trim(),
       description: (description || "").trim(),
@@ -125,10 +125,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         },
       }
     );
+  } finally {
+    context.waitUntil(client.close().catch(() => {}));
   }
 };
 
 export const onRequestDelete: PagesFunction<Env> = async (context) => {
+  const { client, dbName } = createClient(context.env);
   try {
     const url = new URL(context.request.url);
     const id = url.searchParams.get("id");
@@ -146,7 +149,8 @@ export const onRequestDelete: PagesFunction<Env> = async (context) => {
       );
     }
 
-    const db = await getDatabase(context.env);
+    await client.connect();
+    const db = client.db(dbName);
     const result = await db.collection("items").deleteOne({
       _id: new ObjectId(id),
     });
@@ -190,5 +194,7 @@ export const onRequestDelete: PagesFunction<Env> = async (context) => {
         },
       }
     );
+  } finally {
+    context.waitUntil(client.close().catch(() => {}));
   }
 };
