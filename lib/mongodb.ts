@@ -55,14 +55,33 @@ export async function getClientPromise(): Promise<MongoClient> {
     }
   }
 
-  const envUri = process.env.MONGODB_URI || "";
-  let auth = DEFAULT_AUTH;
+  const envUri = process.env.MONGODB_URI;
   const dbName = process.env.MONGODB_DB || DEFAULT_DB;
 
-  // Extract auth from envUri if provided
-  const match = envUri.match(/mongodb(?:\+srv)?:\/\/([^@]+)@/);
-  if (match && match[1]) {
-    auth = match[1];
+  // 1. If user set an explicit URI in env (e.g. mongodb+srv://), try connecting with it directly first!
+  if (envUri) {
+    try {
+      const directClient = new MongoClient(envUri, {
+        tls: true,
+        connectTimeoutMS: 5000,
+        serverSelectionTimeoutMS: 5000,
+        maxPoolSize: 1,
+        minPoolSize: 0,
+      });
+      await directClient.connect();
+      global._mongoClientInstance = directClient;
+      return directClient;
+    } catch (err: any) {
+      console.warn("⚠️ Direct URI (SRV) attempt failed, trying direct shard failover:", err.message || err);
+    }
+  }
+
+  let auth = DEFAULT_AUTH;
+  if (envUri) {
+    const match = envUri.match(/mongodb(?:\+srv)?:\/\/([^@]+)@/);
+    if (match && match[1]) {
+      auth = match[1];
+    }
   }
 
   // Try hosts in priority order with failover
