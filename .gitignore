@@ -27,6 +27,5 @@ yarn-error.log*
 # local env files
 .env*.local
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# local dev api routes (production uses Cloudflare native /functions)
+/app/api
