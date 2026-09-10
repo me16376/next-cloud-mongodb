@@ -5,8 +5,9 @@ interface Env {
   MONGODB_DB?: string;
 }
 
+// Direct standard MongoDB URI without DNS SRV (Cloudflare Workers does not support DNS SRV lookups)
 const fallbackUri =
-  "mongodb+srv://mosabber16376_db_user:46JKde1tjtpaxhOy@mosabber.8onjvem.mongodb.net/next_cloud_db?retryWrites=true&w=majority&appName=Mosabber";
+  "mongodb://mosabber16376_db_user:46JKde1tjtpaxhOy@ac-odtentf-shard-00-00.8onjvem.mongodb.net:27017,ac-odtentf-shard-00-01.8onjvem.mongodb.net:27017,ac-odtentf-shard-00-02.8onjvem.mongodb.net:27017/next_cloud_db?ssl=true&replicaSet=atlas-6zocl1-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Mosabber";
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const startTime = Date.now();
@@ -52,7 +53,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         message: "Failed to connect to MongoDB",
         error: error.message || String(error),
         latencyMs: latency,
-        tip: "Ensure MongoDB Atlas Network Access has 0.0.0.0/0 whitelisted.",
+        tip: "Ensure MongoDB Atlas Network Access has 0.0.0.0/0 whitelisted and direct replica set hosts are reachable.",
       }),
       {
         status: 500,
