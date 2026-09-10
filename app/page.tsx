@@ -53,7 +53,16 @@ export default function Home() {
     setLoadingCheck(true);
     try {
       const res = await fetch("/api/db-check");
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = {
+          success: false,
+          error: "Connection timed out. Please ensure 0.0.0.0/0 is whitelisted in MongoDB Atlas Network Access.",
+        };
+      }
       setDbStatus(data);
     } catch (err: any) {
       setDbStatus({
@@ -70,8 +79,14 @@ export default function Home() {
     setLoadingItems(true);
     try {
       const res = await fetch("/api/items");
-      const json = await res.json();
-      if (json.success && Array.isArray(json.data)) {
+      const text = await res.text();
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        json = null;
+      }
+      if (json && json.success && Array.isArray(json.data)) {
         setItems(json.data);
       }
     } catch (err) {
