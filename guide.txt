@@ -1,0 +1,168 @@
+================================================================================
+   NEXT.JS + MONGODB + CLOUDFLARE PAGES (FUNCTIONS) DEPLOYMENT GUIDE
+================================================================================
+প্রজেক্ট নাম: next-cloud-mongodb
+গিটহাব রিপোজিটরি: https://github.com/me16376/next-cloud-mongodb
+ডাটাবেজ: MongoDB Atlas (Cluster: mosabber.8onjvem.mongodb.net)
+রানটাইম: Cloudflare Pages Functions (Edge Runtime with nodejs_compat)
+================================================================================
+
+এই গাইডটিতে স্টেপ-বাই-স্টেপ বর্ণনা করা হয়েছে কীভাবে আপনার এই Next.js প্রজেক্টটি
+MongoDB Atlas এর সাথে যুক্ত হয়ে Cloudflare Pages Functions এর মাধ্যমে সঠিকভাবে চলবে।
+
+--------------------------------------------------------------------------------
+ধাপ ১: MongoDB Atlas - Network Access কনফিগারেশন (খুবই গুরুত্বপূর্ণ!)
+--------------------------------------------------------------------------------
+ক্লাউডফ্লেয়ার পেজেস (Cloudflare Pages Functions) একটি গ্লোবাল এজ নেটওয়ার্কে চলে, 
+যার আইপি (IP address) ডায়নামিক এবং প্রতি রিকোয়েস্টে পরিবর্তিত হতে পারে। তাই 
+MongoDB Atlas ক্লাস্টারে রিকোয়েস্ট অ্যাক্সেস নিশ্চিত করতে অবশ্যই নিচের কাজটি করতে হবে:
+
+১. MongoDB Atlas ড্যাশবোর্ডে লগইন করুন (https://cloud.mongodb.com).
+২. বাম পাশের মেন্যু থেকে "Network Access" এ ক্লিক করুন।
+৩. "+ ADD IP ADDRESS" বাটনে ক্লিক করুন।
+৪. "ALLOW ACCESS FROM ANYWHERE" বাটনে ক্লিক করুন (এটি 0.0.0.0/0 সেট করবে)।
+৫. "Confirm" বাটনে ক্লিক করে সেভ করুন।
+   (বিঃদ্রঃ এটি না করলে Cloudflare Edge Functions থেকে MongoDB তে কানেক্ট করার সময় 
+   ServerSelectionTimeout বা Connection Refused এরর আসবে)।
+
+আপনার ডাটাবেজ ইউজার ও কানেকশন স্ট্রিং:
+- Database User: mosabber16376_db_user
+- Password:      46JKde1tjtpaxhOy
+- MONGODB_URI:
+mongodb+srv://mosabber16376_db_user:46JKde1tjtpaxhOy@mosabber.8onjvem.mongodb.net/next_cloud_db?retryWrites=true&w=majority&appName=Mosabber
+
+
+--------------------------------------------------------------------------------
+ধাপ ২: লোকাল কম্পিউটারে রান এবং টেস্ট করা (Local Development)
+--------------------------------------------------------------------------------
+প্রজেক্টের রুট ফোল্ডারে টার্মিনাল ওপেন করে নিচের কমান্ডগুলো চালাতে পারেন:
+
+১. ডিপেন্ডেন্সি ইনস্টল করা (যদি পূর্বে না করা থাকে):
+   npm install
+
+২. লোকাল ডেভেলপমেন্ট সার্ভার চালু করা:
+   npm run dev
+
+   ব্রাউজারে http://localhost:3000 ওপেন করুন।
+   - সেখানে MongoDB কানেকশন স্ট্যাটাস লাইভ দেখতে পাবেন।
+   - "Test DB Ping Now" বাটনে ক্লিক করে পিং ল্যাটেন্সি চেক করতে পারবেন।
+   - একটি ডেমো ডকুমেন্ট অ্যাড ও ডিলিট করে টেস্ট করতে পারবেন।
+
+৩. Cloudflare Pages বিল্ড লোকালি টেস্ট করা:
+   npm run pages:build
+
+
+--------------------------------------------------------------------------------
+ধাপ ৩: কোড গিটহাবে পুশ করা (Push to GitHub)
+--------------------------------------------------------------------------------
+আপনার গিটহাব রিপোজিটরি: https://github.com/me16376/next-cloud-mongodb
+
+টার্মিনালে এই কমান্ডগুলো পরপর রান করুন:
+
+১. গিট ইনিশিয়ালাইজ এবং রিমোট যুক্ত করা:
+   git init
+   git remote add origin https://github.com/me16376/next-cloud-mongodb.git
+
+২. ফাইলগুলো স্টেজ ও কমিট করা:
+   git add .
+   git commit -m "feat: Next.js MongoDB app ready for Cloudflare Pages"
+
+৩. মেইন ব্রাঞ্চে পুশ করা:
+   git branch -M main
+   git push -u origin main --force
+
+
+--------------------------------------------------------------------------------
+ধাপ ৪: Cloudflare Pages এ ডিপ্লয় করা (Cloudflare Dashboard Setup)
+--------------------------------------------------------------------------------
+১. Cloudflare ড্যাশবোর্ডে লগইন করুন: https://dash.cloudflare.com
+২. বাম পাশের মেন্যু থেকে "Workers & Pages" এ যান।
+৩. "Create application" বাটনে ক্লিক করুন।
+৪. "Pages" ট্যাব সিলেক্ট করুন এবং "Connect to Git" এ ক্লিক করুন।
+৫. আপনার GitHub অ্যাকাউন্ট অথোরাইজ করুন এবং "me16376/next-cloud-mongodb" রিপোজিটরি সিলেক্ট করুন।
+৬. "Begin setup" এ ক্লিক করুন।
+
+৭. Build Settings কনফিগার করুন:
+   -----------------------------------------------------------------------
+   - Project name:        next-cloud-mongodb (বা আপনার পছন্দের নাম)
+   - Production branch:   main
+   - Framework preset:    Next.js
+   - Build command:       npx @cloudflare/next-on-pages
+   - Build output dir:    .vercel/output/static
+   - Root directory:      / (ফাঁকা রাখুন)
+   -----------------------------------------------------------------------
+
+৮. Environment Variables (পরিবেশ ভ্যারিয়েবল) যোগ করুন:
+   নিচে "Environment variables (advanced)" সেকশনে গিয়ে এই ভ্যারিয়েবলগুলো যুক্ত করুন:
+   
+   Variable Name: MONGODB_URI
+   Value: mongodb+srv://mosabber16376_db_user:46JKde1tjtpaxhOy@mosabber.8onjvem.mongodb.net/next_cloud_db?retryWrites=true&w=majority&appName=Mosabber
+
+   Variable Name: MONGODB_DB
+   Value: next_cloud_db
+
+   Variable Name: NODE_VERSION
+   Value: 20
+
+৯. "Save and Deploy" এ ক্লিক করুন।
+
+
+--------------------------------------------------------------------------------
+ধাপ ৫: nodejs_compat ফ্ল্যাগ কনফিগারেশন (MUST BE ENABLED!)
+--------------------------------------------------------------------------------
+MongoDB ড্রাইভারে TCP সকেট ব্যবহারের জন্য Cloudflare Pages এ Node.js কম্প্যাটিবিলিটি 
+ফ্ল্যাগ সক্রিয় থাকা বাধ্যতামূলক:
+
+১. Cloudflare Pages এ আপনার প্রজেক্টের ড্যাশবোর্ডে যান।
+২. "Settings" ট্যাবে ক্লিক করুন।
+৩. বাম পাশ থেকে "Functions" এ ক্লিক করুন।
+৪. নিচে স্ক্রোল করে "Compatibility flags" সেকশনটি খুঁজুন।
+৫. "Production compatibility flags" এ ক্লিক করে লিখুন:
+   nodejs_compat
+৬. একই সাথে "Preview compatibility flags" এ লিখুন:
+   nodejs_compat
+৭. "Save" বাটনে ক্লিক করুন।
+(বিঃদ্রঃ এই প্রজেক্টের রুট ফোল্ডারে থাকা wrangler.toml ফাইলে এটি আগেই সেট করা রয়েছে,
+তবুও ড্যাশবোর্ড থেকে নিশ্চিত করে নেওয়া ভালো)।
+
+এরপর একটি রি-ডিপ্লয় (Retry deployment / Create deployment) দিন।
+
+
+--------------------------------------------------------------------------------
+ধাপ ৬: ফাইল স্ট্রাকচার এবং গুরুত্বপূর্ণ কোড
+--------------------------------------------------------------------------------
+প্রজেক্টটির প্রধান ফাইলসমূহ:
+├── app/
+│   ├── api/
+│   │   ├── db-check/route.ts   --> MongoDB কানেকশন টেস্ট ও পিং এপিআই (Edge Function)
+│   │   └── items/route.ts      --> MongoDB CRUD এপিআই (GET, POST, DELETE)
+│   ├── globals.css             --> আধুনিক গ্লাস ও ডার্ক মোড স্টাইলিং
+│   ├── layout.tsx              --> রুট লেআউট ও মেটাডাটা
+│   └── page.tsx                --> লাইভ ড্যাশবোর্ড, পিং টেস্ট ও আইটেম ম্যানেজার
+├── lib/
+│   └── mongodb.ts              --> গ্লোবাল ক্যাশড MongoClient (কানেকশন লিক প্রতিরোধক)
+├── .env.local                  --> লোকাল এনভায়রনমেন্ট ভ্যারিয়েবল (গিটহাবে আপলোড হবে না)
+├── .env.example                --> স্যাম্পল এনভায়রনমেন্ট ফাইল
+├── wrangler.toml               --> Cloudflare Pages ও nodejs_compat কনফিগারেশন
+├── guide.txt                   --> এই সম্পূর্ণ নির্দেশিকা ফাইল
+└── package.json                --> প্রজেক্ট ডিপেন্ডেন্সি ও বিল্ড স্ক্রিপ্ট
+
+
+--------------------------------------------------------------------------------
+ধাপ ৭: কমন সমস্যা ও সমাধান (Troubleshooting)
+--------------------------------------------------------------------------------
+১. সমস্যা: "MongoServerSelectionError: connection timed out"
+   সমাধান: MongoDB Atlas এর Network Access এ গিয়ে IP Whitelist এ 0.0.0.0/0 যুক্ত করা 
+   আছে কিনা চেক করুন।
+
+২. সমস্যা: "Could not resolve 'net' or 'tls'"
+   সমাধান: Cloudflare Pages Settings -> Functions এ "nodejs_compat" ফ্ল্যাগটি 
+   যুক্ত করা নিশ্চিত করুন।
+
+৩. সমস্যা: API রুট Cloudflare এ 500 এরর দিচ্ছে:
+   সমাধান: Cloudflare Dashboard -> Settings -> Environment Variables এ গিয়ে 
+   MONGODB_URI সঠিকভাবে সেট করা আছে কিনা দেখে নিন।
+
+================================================================================
+অভিনন্দন! আপনার প্রজেক্টটি এখন সম্পূর্ণ প্রস্তুত।
+================================================================================
