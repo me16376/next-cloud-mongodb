@@ -1,7 +1,7 @@
 import { MongoClient, Db } from "mongodb";
 
 const fallbackUri =
-  "mongodb://mosabber16376_db_user:46JKde1tjtpaxhOy@ac-odtentf-shard-00-00.8onjvem.mongodb.net:27017,ac-odtentf-shard-00-01.8onjvem.mongodb.net:27017,ac-odtentf-shard-00-02.8onjvem.mongodb.net:27017/next_cloud_db?ssl=true&replicaSet=atlas-6zocl1-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Mosabber";
+  "mongodb://mosabber16376_db_user:46JKde1tjtpaxhOy@ac-odtentf-shard-00-02.8onjvem.mongodb.net:27017/next_cloud_db?ssl=true&authSource=admin&directConnection=true";
 
 let client: MongoClient | null = null;
 
@@ -12,31 +12,19 @@ declare global {
 
 export function getClientPromise(): Promise<MongoClient> {
   const uri = process.env.MONGODB_URI || fallbackUri;
+  const isDirect = uri.includes("directConnection=true");
 
-  if (process.env.NODE_ENV === "development") {
-    if (!global._mongoClientPromise) {
-      client = new MongoClient(uri, {
-        connectTimeoutMS: 10000,
-        socketTimeoutMS: 45000,
-        serverSelectionTimeoutMS: 10000,
-        maxPoolSize: 10,
-      });
-      global._mongoClientPromise = client.connect();
-    }
-    return global._mongoClientPromise;
-  } else {
-    // Production (Cloudflare Pages / Node.js)
-    if (!global._mongoClientPromise) {
-      client = new MongoClient(uri, {
-        connectTimeoutMS: 10000,
-        socketTimeoutMS: 45000,
-        serverSelectionTimeoutMS: 10000,
-        maxPoolSize: 10,
-      });
-      global._mongoClientPromise = client.connect();
-    }
-    return global._mongoClientPromise;
+  if (!global._mongoClientPromise) {
+    client = new MongoClient(uri, {
+      connectTimeoutMS: 5000,
+      socketTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 5000,
+      maxPoolSize: 1,
+      ...(isDirect ? { directConnection: true } : {}),
+    });
+    global._mongoClientPromise = client.connect();
   }
+  return global._mongoClientPromise;
 }
 
 export async function getDatabase(): Promise<Db> {

@@ -1,177 +1,124 @@
 ================================================================================
-   NEXT.JS + MONGODB + CLOUDFLARE PAGES (FUNCTIONS) DEPLOYMENT GUIDE
+   NEXT.JS + MONGODB + CLOUDFLARE WORKERS (OPENNEXT) OFFICIAL GUIDE
 ================================================================================
 প্রজেক্ট নাম: next-cloud-mongodb
 গিটহাব রিপোজিটরি: https://github.com/me16376/next-cloud-mongodb
 ডাটাবেজ: MongoDB Atlas (Cluster: mosabber.8onjvem.mongodb.net)
-রানটাইম: Cloudflare Pages Functions (Edge Runtime with nodejs_compat)
+রানটাইম আর্কিটেকচার: Cloudflare Workers (V8 Edge Runtime with nodejs_compat)
+অফিসিয়াল অ্যাডাপ্টার: OpenNext (@opennextjs/cloudflare)
 ================================================================================
 
-এই গাইডটিতে স্টেপ-বাই-স্টেপ বর্ণনা করা হয়েছে কীভাবে আপনার এই Next.js প্রজেক্টটি
-MongoDB Atlas এর সাথে যুক্ত হয়ে Cloudflare Pages Functions এর মাধ্যমে সঠিকভাবে চলবে।
+এই গাইডটিতে Cloudflare-এর বর্তমান অফিসিয়াল এবং আধুনিক স্ট্যান্ডার্ড—OpenNext 
+(@opennextjs/cloudflare) ব্যবহার করে কীভাবে আপনার সম্পূর্ণ Next.js অ্যাপ্লিকেশনটি 
+Cloudflare Workers-এ ডেপ্লয় করবেন, তা ধাপে ধাপে বর্ণনা করা হয়েছে।
 
 --------------------------------------------------------------------------------
-ধাপ ১: MongoDB Atlas - Network Access কনফিগারেশন (খুবই গুরুত্বপূর্ণ!)
+অধ্যায় ১: কেন এই আধুনিক OpenNext পদ্ধতি?
 --------------------------------------------------------------------------------
-ক্লাউডফ্লেয়ার পেজেস (Cloudflare Pages Functions) একটি গ্লোবাল এজ নেটওয়ার্কে চলে, 
-যার আইপি (IP address) ডায়নামিক এবং প্রতি রিকোয়েস্টে পরিবর্তিত হতে পারে। তাই 
-MongoDB Atlas ক্লাস্টারে রিকোয়েস্ট অ্যাক্সেস নিশ্চিত করতে অবশ্যই নিচের কাজটি করতে হবে:
+১. কোনো স্ট্যাটিক এক্সপোর্ট ('out' ফোল্ডার) লাগবে না:
+   পুরোনো পদ্ধতিতে 'output: export' করতে হতো, যার ফলে dynamic API Route 
+   হ্যান্ডলারগুলো ফেইল করত। OpenNext-এ সম্পূর্ণ Next.js App Router (SSR, 
+   Server Actions, app/api/db-check, app/api/items) সরাসরি একটি Cloudflare 
+   Worker (.open-next/worker.js) হিসেবে রান করে।
 
-১. MongoDB Atlas ড্যাশবোর্ডে লগইন করুন (https://cloud.mongodb.com).
-২. বাম পাশের মেন্যু থেকে "Network Access" এ ক্লিক করুন।
-৩. "+ ADD IP ADDRESS" বাটনে ক্লিক করুন।
-৪. "ALLOW ACCESS FROM ANYWHERE" বাটনে ক্লিক করুন (এটি 0.0.0.0/0 সেট করবে)।
-৫. "Confirm" বাটনে ক্লিক করে সেভ করুন।
-   (বিঃদ্রঃ এটি না করলে Cloudflare Edge Functions থেকে MongoDB তে কানেক্ট করার সময় 
-   ServerSelectionTimeout বা Connection Refused এরর আসবে)।
+২. নোড কম্প্যাটিবিলিটি (nodejs_compat):
+   Cloudflare Workers V8 এজ রানটাইমে চলে। wrangler.jsonc ফাইলে 
+   compatibility_flags: ["nodejs_compat"] থাকায় Cloudflare এর নিজস্ব 
+   আউটবাউন্ড টিসিপি সকেটকে Node.js-এর 'net' ও 'tls' সকেটে রূপান্তর করে। 
+   ফলে MongoDB ড্রাইভার নির্বিঘ্নে কানেক্ট হতে পারে।
 
-আপনার ডাটাবেজ ইউজার ও কানেকশন স্ট্রিং:
+
+--------------------------------------------------------------------------------
+অধ্যায় ২: MongoDB Atlas নেটওয়ার্ক সেটআপ (IP Whitelist)
+--------------------------------------------------------------------------------
+Cloudflare Workers-এর আইপি ডায়নামিক, তাই ক্লাউডফ্লেয়ার থেকে এক্সেস নিশ্চিত করতে:
+১. MongoDB Atlas ড্যাশবোর্ডে যান (https://cloud.mongodb.com)।
+২. "Network Access" এ ক্লিক করে "+ ADD IP ADDRESS" চাপুন।
+৩. "ALLOW ACCESS FROM ANYWHERE" (0.0.0.0/0) সিলেক্ট করে "Confirm" করুন।
+
+আপনার ডাটাবেজ ইউজার ও ডিরেক্ট শার্ড ইউআরআই:
 - Database User: mosabber16376_db_user
 - Password:      46JKde1tjtpaxhOy
-- MONGODB_URI:
-mongodb+srv://mosabber16376_db_user:46JKde1tjtpaxhOy@mosabber.8onjvem.mongodb.net/next_cloud_db?retryWrites=true&w=majority&appName=Mosabber
+- Database Name: next_cloud_db
+
+★ Cloudflare Edge এ ব্যবহারের জন্য শতভাগ নির্ভরযোগ্য ডিরেক্ট শার্ড ইউআরআই:
+mongodb://mosabber16376_db_user:46JKde1tjtpaxhOy@ac-odtentf-shard-00-00.8onjvem.mongodb.net:27017,ac-odtentf-shard-00-01.8onjvem.mongodb.net:27017,ac-odtentf-shard-00-02.8onjvem.mongodb.net:27017/next_cloud_db?ssl=true&replicaSet=atlas-6zocl1-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Mosabber
 
 
 --------------------------------------------------------------------------------
-ধাপ ২: লোকাল কম্পিউটারে রান এবং টেস্ট করা (Local Development)
+অধ্যায় ৩: লোকাল ডেভেলপমেন্ট ও টেস্ট
 --------------------------------------------------------------------------------
-প্রজেক্টের রুট ফোল্ডারে টার্মিনাল ওপেন করে নিচের কমান্ডগুলো চালাতে পারেন:
-
-১. ডিপেন্ডেন্সি ইনস্টল করা (যদি পূর্বে না করা থাকে):
-   npm install
-
-২. লোকাল ডেভেলপমেন্ট সার্ভার চালু করা:
+১. লোকাল Next.js ডেভেলপমেন্ট সার্ভার:
    npm run dev
+   ব্রাউজারে http://localhost:3000 ওপেন করলে লাইভ MongoDB স্ট্যাটাস এবং CRUD দেখতে পাবেন।
 
-   ব্রাউজারে http://localhost:3000 ওপেন করুন।
-   - সেখানে MongoDB কানেকশন স্ট্যাটাস লাইভ দেখতে পাবেন।
-   - "Test DB Ping Now" বাটনে ক্লিক করে পিং ল্যাটেন্সি চেক করতে পারবেন।
-   - একটি ডেমো ডকুমেন্ট অ্যাড ও ডিলিট করে টেস্ট করতে পারবেন।
+২. OpenNext Workers বিল্ড যাচাই করা:
+   npm run build:worker
+   (এটি .open-next/worker.js বান্ডেল সফলভাবে তৈরি করবে)
 
-৩. Cloudflare Pages বিল্ড লোকালি টেস্ট করা:
-   npm run pages:build
+৩. লোকাল Workers প্রিভিউ (Local Cloudflare Edge Isolate):
+   npm run preview:worker
+   (এটি Miniflare এজ রানটাইমে লোকালি চালিয়ে টেস্ট করবে)
 
 
 --------------------------------------------------------------------------------
-ধাপ ৩: কোড গিটহাবে পুশ করা (Push to GitHub)
+অধ্যায় ৪: Cloudflare Workers এ সরাসরি ডেপ্লয় করার নিয়ম (CLI Method)
 --------------------------------------------------------------------------------
-আপনার গিটহাব রিপোজিটরি: https://github.com/me16376/next-cloud-mongodb
+সবচেয়ে দ্রুত ও ঝামেলামুক্ত পদ্ধতি হলো Wrangler CLI দিয়ে সরাসরি ডেপ্লয় করা:
 
-টার্মিনালে এই কমান্ডগুলো পরপর রান করুন:
+১. ক্লাউডফ্লেয়ারে লগইন করা (একবার করলেই হবে):
+   npx wrangler login
 
-১. গিট ইনিশিয়ালাইজ এবং রিমোট যুক্ত করা:
-   git init
-   git remote add origin https://github.com/me16376/next-cloud-mongodb.git
+২. সিক্রেট ভ্যারিয়েবল সেট করা:
+   npx wrangler secret put MONGODB_URI
+   (প্রম্পট আসলে উপরের বড় শার্ড URL-টি পেস্ট করে Enter দিন)
 
-২. ফাইলগুলো স্টেজ ও কমিট করা:
+   npx wrangler secret put MONGODB_DB
+   (প্রম্পট আসলে লিখুন: next_cloud_db)
+
+৩. এক ক্লিকে বিল্ড এবং ডেপ্লয়:
+   npm run deploy:worker
+
+আপনার অ্যাপ্লিকেশনটি সেকেন্ডের মধ্যে Cloudflare Workers এর গ্লোবাল এজ নেটওয়ার্কে লাইভ হয়ে যাবে!
+
+
+--------------------------------------------------------------------------------
+অধ্যায় ৫: GitHub ও CI/CD ডেপ্লয়মেন্ট
+--------------------------------------------------------------------------------
+আপনি যদি গিটহাবে পুশ করে Cloudflare Dashboard থেকে ডেপ্লয় করতে চান:
+
+১. কোড গিটহাবে পুশ করুন:
    git add .
-   git commit -m "feat: Next.js MongoDB app ready for Cloudflare Pages"
+   git commit -m "feat: migrate to OpenNext Cloudflare Workers architecture"
+   git push origin main
 
-৩. মেইন ব্রাঞ্চে পুশ করা:
-   git branch -M main
-   git push -u origin main --force
-
-   💡 বিশেষ দ্রষ্টব্য (যদি 403 Permission Denied এরর আসে):
-   যদি উইন্ডোজ ক্রেডেনশিয়ালে অন্য কোনো গিটহাব অ্যাকাউন্ট (যেমন mosabber480) লগইন করা থাকে,
-   তবে নিচের যেকোনো একটি উপায়ে পুশ করুন:
-   - উপায় ক: GitHub Personal Access Token (PAT) ব্যবহার করে:
-     git push https://<YOUR_GITHUB_TOKEN>@github.com/me16376/next-cloud-mongodb.git main
-   - উপায় খ: গিটহাব রিপোজিটরি me16376/next-cloud-mongodb এর Settings -> Collaborators এ
-     গিয়ে আপনার বর্তমান গিটহাব অ্যাকাউন্টকে (mosabber480) Collaborator হিসেবে ইনভাইট ও অ্যাকসেপ্ট করুন।
-
+২. Cloudflare Dashboard এ গিয়ে:
+   - "Workers & Pages" -> "Create application"
+   - আপনার রিপোজিটরি "me16376/next-cloud-mongodb" সিলেক্ট করুন
+   - Build command: npx opennextjs-cloudflare build
+   - Deploy command: npx wrangler deploy
+   - Environment variables এ MONGODB_URI ও MONGODB_DB যোগ করুন।
 
 
 --------------------------------------------------------------------------------
-ধাপ ৪: Cloudflare Pages এ ডিপ্লয় করা (Cloudflare Dashboard Setup)
+অধ্যায় ৬: বর্তমান ফাইল ও প্রজেক্ট স্ট্রাকচার
 --------------------------------------------------------------------------------
-১. Cloudflare ড্যাশবোর্ডে লগইন করুন: https://dash.cloudflare.com
-২. বাম পাশের মেন্যু থেকে "Workers & Pages" এ যান।
-৩. "Create application" বাটনে ক্লিক করুন।
-৪. "Pages" ট্যাব সিলেক্ট করুন এবং "Connect to Git" এ ক্লিক করুন।
-৫. আপনার GitHub অ্যাকাউন্ট অথোরাইজ করুন এবং "me16376/next-cloud-mongodb" রিপোজিটরি সিলেক্ট করুন।
-৬. "Begin setup" এ ক্লিক করুন।
-
-৭. Build Settings কনফিগার করুন:
-   -----------------------------------------------------------------------
-   - Project name:        next-cloud-mongodb
-   - Production branch:   main
-   - Framework preset:    Next.js (Static HTML Export)
-   - Build command:       npx next build
-   - Build output dir:    out
-   - Root directory:      / (ফাঁকা রাখুন)
-   -----------------------------------------------------------------------
-
-৮. Environment Variables (পরিবেশ ভ্যারিয়েবল) যোগ করুন:
-   নিচে "Environment variables (advanced)" সেকশনে গিয়ে এই ভ্যারিয়েবলগুলো যুক্ত করুন:
-   
-   Variable Name: MONGODB_URI
-   Value: mongodb+srv://mosabber16376_db_user:46JKde1tjtpaxhOy@mosabber.8onjvem.mongodb.net/next_cloud_db?retryWrites=true&w=majority&appName=Mosabber
-
-   Variable Name: MONGODB_DB
-   Value: next_cloud_db
-
-   Variable Name: NODE_VERSION
-   Value: 20
-
-৯. "Save and Deploy" এ ক্লিক করুন।
-
-
---------------------------------------------------------------------------------
-ধাপ ৫: nodejs_compat ফ্ল্যাগ কনফিগারেশন (MUST BE ENABLED!)
---------------------------------------------------------------------------------
-MongoDB ড্রাইভারে TCP সকেট ব্যবহারের জন্য Cloudflare Pages এ Node.js কম্প্যাটিবিলিটি 
-ফ্ল্যাগ সক্রিয় থাকা বাধ্যতামূলক:
-
-১. Cloudflare Pages এ আপনার প্রজেক্টের ড্যাশবোর্ডে যান।
-২. "Settings" ট্যাবে ক্লিক করুন।
-৩. বাম পাশ থেকে "Functions" এ ক্লিক করুন।
-৪. নিচে স্ক্রোল করে "Compatibility flags" সেকশনটি খুঁজুন।
-৫. "Production compatibility flags" এ ক্লিক করে লিখুন:
-   nodejs_compat
-৬. একই সাথে "Preview compatibility flags" এ লিখুন:
-   nodejs_compat
-৭. "Save" বাটনে ক্লিক করুন।
-(বিঃদ্রঃ এই প্রজেক্টের রুট ফোল্ডারে থাকা wrangler.toml ফাইলে এটি আগেই সেট করা রয়েছে,
-তবুও ড্যাশবোর্ড থেকে নিশ্চিত করে নেওয়া ভালো)।
-
-এরপর একটি রি-ডিপ্লয় (Retry deployment / Create deployment) দিন।
-
-
---------------------------------------------------------------------------------
-ধাপ ৬: ফাইল স্ট্রাকচার এবং গুরুত্বপূর্ণ কোড
---------------------------------------------------------------------------------
-প্রজেক্টটির প্রধান ফাইলসমূহ:
 ├── app/
 │   ├── api/
-│   │   ├── db-check/route.ts   --> MongoDB কানেকশন টেস্ট ও পিং এপিআই (Edge Function)
-│   │   └── items/route.ts      --> MongoDB CRUD এপিআই (GET, POST, DELETE)
-│   ├── globals.css             --> আধুনিক গ্লাস ও ডার্ক মোড স্টাইলিং
-│   ├── layout.tsx              --> রুট লেআউট ও মেটাডাটা
-│   └── page.tsx                --> লাইভ ড্যাশবোর্ড, পিং টেস্ট ও আইটেম ম্যানেজার
+│   │   ├── db-check/route.ts   --> নেটিভ Next.js API রুট (Workers এ সরাসরি রান করে)
+│   │   └── items/route.ts      --> নেটিভ Next.js CRUD রুট
+│   ├── globals.css             --> গ্লাস ও ডার্ক মোড ডিজাইন
+│   ├── layout.tsx              --> রুট লেআউট
+│   └── page.tsx                --> লাইভ ড্যাশবোর্ড ও কানেকশন মনিটর
 ├── lib/
-│   └── mongodb.ts              --> গ্লোবাল ক্যাশড MongoClient (কানেকশন লিক প্রতিরোধক)
-├── .env.local                  --> লোকাল এনভায়রনমেন্ট ভ্যারিয়েবল (গিটহাবে আপলোড হবে না)
+│   └── mongodb.ts              --> গ্লোবাল ক্যাশড MongoClient (সকেট লিক প্রতিরোধক)
+├── open-next.config.ts         --> OpenNext Cloudflare অ্যাডাপ্টার কনফিগারেশন
+├── wrangler.jsonc              --> Cloudflare Workers ও nodejs_compat কনফিগারেশন
+├── .env.local                  --> লোকাল এনভায়রনমেন্ট ভ্যারিয়েবল
 ├── .env.example                --> স্যাম্পল এনভায়রনমেন্ট ফাইল
-├── wrangler.toml               --> Cloudflare Pages ও nodejs_compat কনফিগারেশন
-├── guide.txt                   --> এই সম্পূর্ণ নির্দেশিকা ফাইল
-└── package.json                --> প্রজেক্ট ডিপেন্ডেন্সি ও বিল্ড স্ক্রিপ্ট
-
-
---------------------------------------------------------------------------------
-ধাপ ৭: কমন সমস্যা ও সমাধান (Troubleshooting)
---------------------------------------------------------------------------------
-১. সমস্যা: "MongoServerSelectionError: connection timed out"
-   সমাধান: MongoDB Atlas এর Network Access এ গিয়ে IP Whitelist এ 0.0.0.0/0 যুক্ত করা 
-   আছে কিনা চেক করুন।
-
-২. সমস্যা: "Could not resolve 'net' or 'tls'"
-   সমাধান: Cloudflare Pages Settings -> Functions এ "nodejs_compat" ফ্ল্যাগটি 
-   যুক্ত করা নিশ্চিত করুন।
-
-৩. সমস্যা: API রুট Cloudflare এ 500 এরর দিচ্ছে:
-   সমাধান: Cloudflare Dashboard -> Settings -> Environment Variables এ গিয়ে 
-   MONGODB_URI সঠিকভাবে সেট করা আছে কিনা দেখে নিন।
+├── package.json                --> ডিপেন্ডেন্সি ও OpenNext স্ক্রিপ্ট
+└── guide.txt                   --> এই পূর্ণাঙ্গ নির্দেশিকা
 
 ================================================================================
-অভিনন্দন! আপনার প্রজেক্টটি এখন সম্পূর্ণ প্রস্তুত।
+আপনার প্রজেক্টটি এখন সম্পূর্ণ আধুনিক OpenNext Cloudflare Workers এ রূপান্তর করা হয়েছে!
 ================================================================================

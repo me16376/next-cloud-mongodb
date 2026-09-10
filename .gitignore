@@ -11,12 +11,9 @@
 /.next/
 /out/
 
-# production
-/build
-/out
-/.wrangler
-
-# cloudflare pages build output
+# OpenNext & Cloudflare build output
+/.open-next/
+/.wrangler/
 /.vercel/
 
 # debug
@@ -26,6 +23,3 @@ yarn-error.log*
 
 # local env files
 .env*.local
-
-# local dev api routes (production uses Cloudflare native /functions)
-/app/api
