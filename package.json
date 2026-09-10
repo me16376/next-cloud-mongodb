@@ -7,33 +7,38 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "build:worker": "node scripts/build.js",
-    "pages:build": "node scripts/build.js",
-    "preview:worker": "npm run build:worker && wrangler dev",
-    "deploy:worker": "npm run build:worker && wrangler deploy",
-    "postinstall": "node scripts/patch-next-on-pages.js"
+    "dev:vinext": "vinext dev",
+    "build:vinext": "vinext build",
+    "preview:vinext": "wrangler dev",
+    "deploy:vinext": "vinext-cloudflare deploy --config dist/server/wrangler.json"
   },
   "dependencies": {
+    "@vinext/cloudflare": "^1.0.0-beta.7",
     "lucide-react": "^0.475.0",
     "mongodb": "^6.13.0",
     "next": "^15.5.25",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-server-dom-webpack": "^19.3.0",
+    "vinext": "^1.0.0-beta.9"
   },
   "devDependencies": {
-    "@cloudflare/next-on-pages": "^1.13.16",
+    "@cloudflare/vite-plugin": "^1.54.6",
     "@cloudflare/workers-types": "^5.20260910.1",
-    "@opennextjs/cloudflare": "^1.20.6",
     "@types/node": "^22.13.4",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
+    "@vitejs/plugin-react": "^6.1.1",
+    "@vitejs/plugin-rsc": "^0.5.34",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.5.2",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3",
+    "vite": "^8.3.0",
     "wrangler": "^4.130.0"
   },
   "overrides": {
     "@cloudflare/workers-types": "$@cloudflare/workers-types"
-  }
+  },
+  "type": "module"
 }

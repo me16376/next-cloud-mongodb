@@ -38,21 +38,6 @@ async function connectToShard(host: string, auth: string, dbName: string): Promi
 }
 
 export async function getClientPromise(): Promise<MongoClient> {
-  // If we already have an active client, verify it's still alive
-  if (global._mongoClientInstance) {
-    try {
-      await global._mongoClientInstance.db("admin").command({ ping: 1 });
-      return global._mongoClientInstance;
-    } catch {
-      // Stale or closed socket from previous serverless invocation
-      try {
-        await global._mongoClientInstance.close();
-      } catch {
-        // ignore
-      }
-      global._mongoClientInstance = null;
-    }
-  }
 
   const envUri = process.env.MONGODB_URI;
   const dbName = process.env.MONGODB_DB || DEFAULT_DB;
@@ -88,7 +73,6 @@ export async function getClientPromise(): Promise<MongoClient> {
   for (const host of SHARD_HOSTS) {
     try {
       const client = await connectToShard(host, auth, dbName);
-      global._mongoClientInstance = client;
       return client;
     } catch (err: any) {
       lastError = err;
