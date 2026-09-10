@@ -49,4 +49,9 @@ if (fs.existsSync(workerFile)) {
   fs.writeFileSync(path.join(outDir, "_worker.js"), workerCode, "utf-8");
 }
 
-console.log("✅ Successfully generated 'out' directory with _worker.js for Cloudflare Pages!");
+// Also sync to .vercel/output/static so user can use .vercel/output/static or out in Cloudflare Pages
+const vercelStaticDir = path.resolve(__dirname, "..", ".vercel", "output", "static");
+fs.mkdirSync(vercelStaticDir, { recursive: true });
+fs.cpSync(outDir, vercelStaticDir, { recursive: true });
+
+console.log("✅ Successfully generated both 'out' and '.vercel/output/static' with _worker.js for Cloudflare Pages!");

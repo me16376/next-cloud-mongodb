@@ -11,18 +11,30 @@ declare global {
 }
 
 export function getClientPromise(): Promise<MongoClient> {
-  const uri = process.env.MONGODB_URI || fallbackUri;
+  let uri = process.env.MONGODB_URI || fallbackUri;
+  
+  // Cloudflare Workers / Pages cannot resolve DNS SRV records (mongodb+srv://)
+  if (uri.startsWith("mongodb+srv://")) {
+    console.warn("⚠️ mongodb+srv:// detected. Cloudflare edge cannot resolve SRV DNS. Falling back to direct shard replica set URI.");
+    uri = fallbackUri;
+  }
+  
   const isDirect = uri.includes("directConnection=true");
 
   if (!global._mongoClientPromise) {
     client = new MongoClient(uri, {
-      connectTimeoutMS: 15000,
-      socketTimeoutMS: 20000,
-      serverSelectionTimeoutMS: 15000,
+      connectTimeoutMS: 10000,
+      socketTimeoutMS: 15000,
+      serverSelectionTimeoutMS: 10000,
       maxPoolSize: 1,
       ...(isDirect ? { directConnection: true } : {}),
     });
-    global._mongoClientPromise = client.connect();
+    global._mongoClientPromise = client.connect().catch((err) => {
+      // Clear cached promise on failure so next invocation can retry
+      global._mongoClientPromise = undefined;
+      client = null;
+      throw err;
+    });
   }
   return global._mongoClientPromise;
 }
