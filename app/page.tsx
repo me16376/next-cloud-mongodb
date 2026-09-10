@@ -489,38 +489,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Quick Instructions & Cloudflare Steps */}
-        <div className="glass-card rounded-2xl p-6 border border-white/10">
-          <h3 className="font-bold text-sm text-white flex items-center gap-2 mb-3">
-            <Terminal className="w-4 h-4 text-amber-400" />
-            <span>Cloudflare Pages Deploy Summary</span>
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-300">
-            <div className="bg-slate-900/70 p-3.5 rounded-xl border border-white/5 space-y-1.5">
-              <span className="font-semibold text-amber-300 block">1. Build Command</span>
-              <code className="text-slate-200 bg-slate-950 px-2 py-1 rounded block font-mono">
-                npx next build
-              </code>
-              <p className="text-[11px] text-slate-400">Exports Next.js static assets directly into the /out directory.</p>
-            </div>
 
-            <div className="bg-slate-900/70 p-3.5 rounded-xl border border-white/5 space-y-1.5">
-              <span className="font-semibold text-emerald-300 block">2. Output Directory</span>
-              <code className="text-slate-200 bg-slate-950 px-2 py-1 rounded block font-mono">
-                out
-              </code>
-              <p className="text-[11px] text-slate-400">Cloudflare Pages serves all static assets from this folder.</p>
-            </div>
-
-            <div className="bg-slate-900/70 p-3.5 rounded-xl border border-white/5 space-y-1.5">
-              <span className="font-semibold text-cyan-300 block">3. Cloudflare Functions</span>
-              <code className="text-slate-200 bg-slate-950 px-2 py-1 rounded block font-mono">
-                /functions directory
-              </code>
-              <p className="text-[11px] text-slate-400">Native Cloudflare Functions with nodejs_compat for MongoDB Atlas.</p>
-            </div>
-          </div>
-        </div>
       </main>
 
       {/* Footer */}
