@@ -20,18 +20,17 @@ declare global {
  * Direct connection bypasses serverless replica set discovery multi-socket timeouts on Cloudflare.
  */
 async function connectToShard(host: string, auth: string, dbName: string): Promise<MongoClient> {
-  const uri = `mongodb://${auth}@${host}/${dbName}?authSource=admin&retryWrites=true&w=majority&appName=Mosabber`;
+  const uri = `mongodb://${auth}@${host}/${dbName}?tls=true&directConnection=true&authSource=admin&retryWrites=true&w=majority&appName=Mosabber`;
 
   const client = new MongoClient(uri, {
     directConnection: true,
     tls: true,
-    tlsAllowInvalidCertificates: true,
     family: 4,
     maxPoolSize: 1,
     minPoolSize: 0,
-    connectTimeoutMS: 5000,
-    serverSelectionTimeoutMS: 5000,
-    socketTimeoutMS: 8000,
+    connectTimeoutMS: 10000,
+    serverSelectionTimeoutMS: 10000,
+    socketTimeoutMS: 15000,
   });
 
   await client.connect();
