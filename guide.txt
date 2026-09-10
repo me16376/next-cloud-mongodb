@@ -71,6 +71,15 @@ mongodb+srv://mosabber16376_db_user:46JKde1tjtpaxhOy@mosabber.8onjvem.mongodb.ne
    git branch -M main
    git push -u origin main --force
 
+   💡 বিশেষ দ্রষ্টব্য (যদি 403 Permission Denied এরর আসে):
+   যদি উইন্ডোজ ক্রেডেনশিয়ালে অন্য কোনো গিটহাব অ্যাকাউন্ট (যেমন mosabber480) লগইন করা থাকে,
+   তবে নিচের যেকোনো একটি উপায়ে পুশ করুন:
+   - উপায় ক: GitHub Personal Access Token (PAT) ব্যবহার করে:
+     git push https://<YOUR_GITHUB_TOKEN>@github.com/me16376/next-cloud-mongodb.git main
+   - উপায় খ: গিটহাব রিপোজিটরি me16376/next-cloud-mongodb এর Settings -> Collaborators এ
+     গিয়ে আপনার বর্তমান গিটহাব অ্যাকাউন্টকে (mosabber480) Collaborator হিসেবে ইনভাইট ও অ্যাকসেপ্ট করুন।
+
+
 
 --------------------------------------------------------------------------------
 ধাপ ৪: Cloudflare Pages এ ডিপ্লয় করা (Cloudflare Dashboard Setup)
