@@ -10,7 +10,8 @@
     "build:worker": "node scripts/build.js",
     "pages:build": "node scripts/build.js",
     "preview:worker": "npm run build:worker && wrangler dev",
-    "deploy:worker": "npm run build:worker && wrangler deploy"
+    "deploy:worker": "npm run build:worker && wrangler deploy",
+    "postinstall": "node scripts/patch-next-on-pages.js"
   },
   "dependencies": {
     "lucide-react": "^0.475.0",
@@ -20,6 +21,7 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@cloudflare/next-on-pages": "^1.13.16",
     "@cloudflare/workers-types": "^5.20260910.1",
     "@opennextjs/cloudflare": "^1.20.6",
     "@types/node": "^22.13.4",
