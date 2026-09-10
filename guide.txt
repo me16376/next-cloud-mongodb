@@ -93,11 +93,11 @@ mongodb+srv://mosabber16376_db_user:46JKde1tjtpaxhOy@mosabber.8onjvem.mongodb.ne
 
 ৭. Build Settings কনফিগার করুন:
    -----------------------------------------------------------------------
-   - Project name:        next-cloud-mongodb (বা আপনার পছন্দের নাম)
+   - Project name:        next-cloud-mongodb
    - Production branch:   main
-   - Framework preset:    Next.js
-   - Build command:       npx @cloudflare/next-on-pages
-   - Build output dir:    .vercel/output/static
+   - Framework preset:    Next.js (Static HTML Export)
+   - Build command:       npx next build
+   - Build output dir:    out
    - Root directory:      / (ফাঁকা রাখুন)
    -----------------------------------------------------------------------
 

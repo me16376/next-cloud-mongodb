@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "pages:build": "npx @cloudflare/next-on-pages",
-    "preview": "npm run pages:build && wrangler pages dev .vercel/output/static --compatibility-flag=nodejs_compat"
+    "pages:build": "next build",
+    "preview": "wrangler pages dev out --compatibility-flag=nodejs_compat"
   },
   "dependencies": {
     "lucide-react": "^0.475.0",

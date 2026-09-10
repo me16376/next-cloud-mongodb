@@ -13,6 +13,8 @@
 
 # production
 /build
+/out
+/.wrangler
 
 # cloudflare pages build output
 /.vercel/
