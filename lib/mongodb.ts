@@ -16,9 +16,9 @@ export function getClientPromise(): Promise<MongoClient> {
 
   if (!global._mongoClientPromise) {
     client = new MongoClient(uri, {
-      connectTimeoutMS: 5000,
-      socketTimeoutMS: 10000,
-      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 15000,
+      socketTimeoutMS: 20000,
+      serverSelectionTimeoutMS: 15000,
       maxPoolSize: 1,
       ...(isDirect ? { directConnection: true } : {}),
     });
