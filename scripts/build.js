@@ -28,9 +28,25 @@ if (fs.existsSync(assetsDir)) {
   fs.cpSync(assetsDir, outDir, { recursive: true });
 }
 
-// Copy worker.js to _worker.js in out root (Pages Advanced Mode entrypoint)
+// Copy worker.js to _worker.js in out root with Cloudflare Pages static asset handling
 if (fs.existsSync(workerFile)) {
-  fs.copyFileSync(workerFile, path.join(outDir, "_worker.js"));
+  let workerCode = fs.readFileSync(workerFile, "utf-8");
+  
+  // In Pages Advanced Mode, intercept and serve static assets via env.ASSETS
+  const pagesAssetHook = `const url = new URL(request.url);
+            if (env.ASSETS && (url.pathname.startsWith("/_next/static/") || url.pathname === "/favicon.ico")) {
+                const assetResponse = await env.ASSETS.fetch(request);
+                if (assetResponse.status !== 404) {
+                    return assetResponse;
+                }
+            }`;
+  
+  workerCode = workerCode.replace(
+    "const url = new URL(request.url);",
+    pagesAssetHook
+  );
+  
+  fs.writeFileSync(path.join(outDir, "_worker.js"), workerCode, "utf-8");
 }
 
 console.log("✅ Successfully generated 'out' directory with _worker.js for Cloudflare Pages!");
