@@ -4,6 +4,16 @@ import { ObjectId } from "mongodb";
 
 export const dynamic = "force-dynamic";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: corsHeaders });
+}
+
 export async function GET() {
   try {
     const db = await getDatabase();
@@ -14,18 +24,21 @@ export async function GET() {
       .limit(30)
       .toArray();
 
-    return NextResponse.json({
-      success: true,
-      data: items,
-      count: items.length,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        data: items,
+        count: items.length,
+      },
+      { headers: corsHeaders }
+    );
   } catch (error: any) {
     return NextResponse.json(
       {
         success: false,
         error: error.message || "Failed to fetch items",
       },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
@@ -38,7 +51,7 @@ export async function POST(req: NextRequest) {
     if (!title || typeof title !== "string" || !title.trim()) {
       return NextResponse.json(
         { success: false, error: "Title is required" },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -52,22 +65,25 @@ export async function POST(req: NextRequest) {
 
     const result = await db.collection("items").insertOne(newItem);
 
-    return NextResponse.json({
-      success: true,
-      message: "Item created successfully in MongoDB!",
-      insertedId: result.insertedId,
-      data: {
-        _id: result.insertedId,
-        ...newItem,
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Item created successfully in MongoDB!",
+        insertedId: result.insertedId,
+        data: {
+          _id: result.insertedId,
+          ...newItem,
+        },
       },
-    });
+      { headers: corsHeaders }
+    );
   } catch (error: any) {
     return NextResponse.json(
       {
         success: false,
         error: error.message || "Failed to insert item",
       },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
@@ -80,7 +96,7 @@ export async function DELETE(req: NextRequest) {
     if (!id) {
       return NextResponse.json(
         { success: false, error: "Item ID is required" },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -92,21 +108,24 @@ export async function DELETE(req: NextRequest) {
     if (result.deletedCount === 0) {
       return NextResponse.json(
         { success: false, error: "Item not found" },
-        { status: 404 }
+        { status: 404, headers: corsHeaders }
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Item deleted successfully",
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Item deleted successfully",
+      },
+      { headers: corsHeaders }
+    );
   } catch (error: any) {
     return NextResponse.json(
       {
         success: false,
         error: error.message || "Failed to delete item",
       },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }

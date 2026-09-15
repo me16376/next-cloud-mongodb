@@ -3,6 +3,16 @@ import { getDatabase } from "@/lib/mongodb";
 
 export const dynamic = "force-dynamic";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: corsHeaders });
+}
+
 export async function GET() {
   const startTime = Date.now();
   try {
@@ -11,15 +21,18 @@ export async function GET() {
     const latency = Date.now() - startTime;
     const collections = await db.listCollections().toArray();
 
-    return NextResponse.json({
-      success: true,
-      message: "MongoDB connected successfully via Vinext on Cloudflare Workers!",
-      ping: pingResult,
-      latencyMs: latency,
-      database: db.databaseName,
-      collections: collections.map((c) => c.name),
-      timestamp: new Date().toISOString(),
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        message: "MongoDB connected successfully via Vinext on Cloudflare Workers!",
+        ping: pingResult,
+        latencyMs: latency,
+        database: db.databaseName,
+        collections: collections.map((c) => c.name),
+        timestamp: new Date().toISOString(),
+      },
+      { headers: corsHeaders }
+    );
   } catch (error: any) {
     const latency = Date.now() - startTime;
     return NextResponse.json(
@@ -29,7 +42,7 @@ export async function GET() {
         error: error.message || String(error),
         latencyMs: latency,
       },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
