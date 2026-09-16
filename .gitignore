@@ -26,3 +26,4 @@ yarn-error.log*
 /dist/
 .vinext/
 *.tsbuildinfo
+cloudflare Mongodb pages funtion not work/

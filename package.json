@@ -10,9 +10,7 @@
     "dev:vinext": "vinext dev",
     "build:vinext": "vinext build",
     "pages:build": "node build-pages.js",
-    "build:cloudflare": "node build-pages.js",
-    "preview:vinext": "wrangler dev",
-    "deploy:vinext": "vinext-cloudflare deploy --config dist/server/wrangler.json"
+    "build:cloudflare": "node build-pages.js"
   },
   "dependencies": {
     "@vinext/cloudflare": "^1.0.0-beta.7",

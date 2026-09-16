@@ -24,7 +24,7 @@ export async function GET() {
     return NextResponse.json(
       {
         success: true,
-        message: "MongoDB connected successfully via Vinext on Cloudflare Workers!",
+        message: "MongoDB connected successfully on Cloudflare Pages!",
         ping: pingResult,
         latencyMs: latency,
         database: db.databaseName,
