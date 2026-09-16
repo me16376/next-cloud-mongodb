@@ -16,6 +16,9 @@ import {
   Terminal,
   ShieldCheck,
   GitBranch,
+  Globe,
+  Copy,
+  Check,
 } from "lucide-react";
 
 interface DbCheckResult {
@@ -42,6 +45,8 @@ export default function Home() {
   const [items, setItems] = useState<Item[]>([]);
   const [loadingItems, setLoadingItems] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [originUrl, setOriginUrl] = useState<string>("https://next-cloud-mongodb.pages.dev");
+  const [copied, setCopied] = useState<boolean>(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -140,7 +145,17 @@ export default function Home() {
     }
   };
 
+  const copyApiUrl = (endpoint: string = "/api/db-check") => {
+    const fullUrl = `${originUrl}${endpoint}`;
+    navigator.clipboard.writeText(fullUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   useEffect(() => {
+    if (typeof window !== "undefined" && window.location.origin) {
+      setOriginUrl(window.location.origin);
+    }
     checkConnection();
     fetchItems();
   }, []);
@@ -300,44 +315,85 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Card 3: GitHub & Guide Info */}
-          <div className="glass-card rounded-2xl p-5 border border-white/10 flex flex-col justify-between">
+          {/* Card 3: Active API & Endpoints */}
+          <div className="glass-card rounded-2xl p-5 border border-white/10 glow-mongo flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center text-cyan-400">
-                    <Terminal className="w-4 h-4" />
+                    <Globe className="w-4 h-4" />
                   </div>
-                  <h3 className="font-semibold text-sm text-white">Deployment Guide</h3>
+                  <h3 className="font-semibold text-sm text-white">Active API Endpoints</h3>
                 </div>
                 <span className="flex items-center gap-1.5 text-xs text-cyan-400 font-medium px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  guide.txt
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                  Live Routes
                 </span>
               </div>
 
               <div className="mt-4 space-y-2 text-xs">
-                <div className="flex justify-between py-1 border-b border-white/5">
-                  <span className="text-slate-400">Repository:</span>
-                  <span className="text-cyan-300 font-mono truncate max-w-[150px]">next-cloud-mongodb</span>
+                <div className="flex justify-between items-center py-1 border-b border-white/5">
+                  <span className="text-slate-400">Host Domain:</span>
+                  <span className="text-cyan-300 font-mono text-[11px] truncate max-w-[160px]" title={originUrl}>
+                    {originUrl ? originUrl.replace(/^https?:\/\//, "") : "loading..."}
+                  </span>
                 </div>
-                <div className="flex justify-between py-1 border-b border-white/5">
-                  <span className="text-slate-400">Atlas IP:</span>
-                  <span className="text-emerald-400 font-mono font-semibold">0.0.0.0/0 (Required)</span>
+                <div className="flex justify-between items-center py-1 border-b border-white/5">
+                  <span className="text-slate-400">DB Ping Route:</span>
+                  <a
+                    href={`${originUrl}/api/db-check`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-emerald-400 font-mono text-[11px] hover:underline group"
+                  >
+                    /api/db-check
+                    <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-emerald-300" />
+                  </a>
                 </div>
-                <div className="flex justify-between py-1 border-b border-white/5">
-                  <span className="text-slate-400">Total Items:</span>
-                  <span className="text-slate-200 font-mono">{items.length} records</span>
+                <div className="flex justify-between items-center py-1 border-b border-white/5">
+                  <span className="text-slate-400">Items CRUD:</span>
+                  <a
+                    href={`${originUrl}/api/items`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-slate-200 font-mono text-[11px] hover:underline group"
+                  >
+                    /api/items
+                    <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-cyan-300" />
+                  </a>
                 </div>
-                <div className="flex justify-between py-1">
-                  <span className="text-slate-400">Documentation:</span>
-                  <span className="text-slate-200 font-mono">guide.txt available</span>
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-slate-400">API Status:</span>
+                  <span className="text-emerald-400 font-mono text-[11px]">
+                    {dbStatus?.success ? "200 OK (Online)" : "Connecting..."}
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div className="mt-4 p-2.5 rounded-lg bg-slate-900/60 border border-white/5 text-[11px] text-slate-300">
-              Check the root directory for <strong className="text-cyan-300">guide.txt</strong> containing all step-by-step instructions.
+            <div className="mt-4 p-2.5 rounded-lg bg-slate-900/70 border border-white/5 text-[11px] flex items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Active API URL</p>
+                <p className="font-mono text-cyan-300 truncate text-[11px]">{originUrl}/api/db-check</p>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => copyApiUrl("/api/db-check")}
+                  className="p-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-white/10 transition-all flex items-center gap-1 text-xs"
+                  title="Copy API URL"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+                <a
+                  href={`${originUrl}/api/db-check`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-1.5 rounded-md bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 transition-all flex items-center gap-1 text-xs"
+                  title="Open API in new tab"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
             </div>
           </div>
         </div>
