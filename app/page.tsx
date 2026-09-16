@@ -243,8 +243,8 @@ export default function Home() {
                   </span>
                 </div>
                 <div className="flex justify-between py-1">
-                  <span className="text-slate-400">User:</span>
-                  <span className="text-slate-200 font-mono">mosabber16376_db_user</span>
+                  <span className="text-slate-400">Auth:</span>
+                  <span className="text-emerald-400 font-mono text-xs">Configured (Env)</span>
                 </div>
               </div>
             </div>

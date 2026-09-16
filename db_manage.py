@@ -13,11 +13,10 @@ if sys.platform == "win32":
 
 load_dotenv(".env.local")
 
-fallback_uri = (
-    "mongodb+srv://mosabber16376_db_user:46JKde1tjtpaxhOy@mosabber.8onjvem.mongodb.net/"
-    "next_cloud_db?retryWrites=true&w=majority&appName=Mosabber"
-)
-uri = os.getenv("MONGODB_URI", fallback_uri)
+uri = os.getenv("MONGODB_URI")
+if not uri:
+    print("❌ Error: MONGODB_URI environment variable is missing! Please set it in .env.local")
+    sys.exit(1)
 db_name = os.getenv("MONGODB_DB", "next_cloud_db")
 
 def get_db():
